@@ -111,7 +111,7 @@ test_modify_decimal_format()
 
 # test_calculate_kappa_value() {
 #     BARE_MASS=1.0
-#     output=$(calculate_kappa_value "$BARE_MASS")
+#     output=$(calculate_kappa_value_from_bare_mass "$BARE_MASS")
 #     expected_output="0.1"
 
 #     assert $output $expected_output

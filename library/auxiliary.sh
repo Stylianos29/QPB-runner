@@ -509,7 +509,7 @@ constant_parameters_update() {
                 return 1
             fi
             bare_mass_updated=true
-            KAPPA_VALUE=$(calculate_kappa_value "$value")
+            KAPPA_VALUE=$(calculate_kappa_value_from_bare_mass "$value")
         elif [[ "$key" == "KAPPA_VALUE" ]]; then
             if [ "$bare_mass_updated" = true ]; then
                 error_message="Cannot update both 'BARE_MASS' and "
