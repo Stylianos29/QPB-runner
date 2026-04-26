@@ -11,7 +11,7 @@ manual changes to input files.
 
 1. **Clone the repository** to a directory of your choice, preferably outside
    the qpb project directory.
-2. **Navigate** to the `qpb_parameters_scan/main_scripts` directory.
+2. **Navigate** to the `QPB-runner/main_scripts` directory.
 3. **Run** the following command, where `<main_program_directory>` is the full
    path to a qpb `main_program` directory that contains the executable:
    ```bash

@@ -2,9 +2,9 @@
 
 
 ######################################################################
-# update.sh - Script for updating a qpb_parameters_scan installation
+# update.sh - Script for updating a QPB-runner installation
 #
-# This script facilitates the update process for the qpb_parameters_scan
+# This script facilitates the update process for the QPB-runner
 # by executing the setup script located in the main scripts directory. 
 # It sets the necessary environment variables and prepares the environment 
 # for further processing.
@@ -19,7 +19,7 @@
 #   - Extracts the destination directory path by navigating two levels up from
 #     the "multiple_runs_scripts" directory.
 #   - Changes the working directory to the "main_scripts" directory of the
-#     qpb_parameters_scan.
+#     QPB-runner.
 #   - Executes the setup script with the updated destination path, ensuring all
 #     necessary configurations are applied.
 #
@@ -38,13 +38,13 @@ export CURRENT_SCRIPT_FULL_PATH=$(realpath "$0")
 # Extract directory two levels above the "qpb_parameters_scan_files" directory
 DESTINATION_DIRECTORY_PATH=$(dirname "$(dirname "$CURRENT_SCRIPT_FULL_PATH")")
 
-# Change to the "main_scripts" directory of the "qpb_parameters_scan"
+# Change to the "main_scripts" directory of the "QPB-runner"
 # NOTE: This path is set automatically by "setup.sh"
 MAIN_SCRIPTS_DIRECTORY=
 
 # Change to the "main_scripts" directory
 cd "$MAIN_SCRIPTS_DIRECTORY" || {
-    echo "Error: Unable to access 'qpb_parameters_scan/main_scripts' directory";
+    echo "Error: Unable to access 'QPB-runner/main_scripts' directory";
     echo "Exiting...";
     exit 1;
 }

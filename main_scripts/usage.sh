@@ -10,17 +10,17 @@
 
 # SOURCE LIBRARY SCRIPTS
 
-# NOTE: "qpb_parameters_scan" project directory path is set by "setup.sh" here
+# NOTE: "QPB-runner" project directory path is set by "setup.sh" here
 # and not in the input file to prevent accidental modification.
 QPB_PARAMETERS_SCAN_PROJECT_DIRECTORY_FULL_PATH=
 if [ ! -d "$QPB_PARAMETERS_SCAN_PROJECT_DIRECTORY_FULL_PATH" ]; then
-    ERROR_MESSAGE="Invalid 'qpb_parameters_scan' project directory path."
+    ERROR_MESSAGE="Invalid 'QPB-runner' project directory path."
     echo "ERROR: "$ERROR_MESSAGE
     echo "Exiting..."
     exit 1
 fi
 
-# Source all custom functions scripts from "qpb_parameters_scan/library" using a
+# Source all custom functions scripts from "QPB-runner/library" using a
 # loop avoiding this way name-specific sourcing and thus potential typos
 sourced_scripts_count=0 # Initialize a counter for sourced files
 for custom_functions_script in $(realpath \

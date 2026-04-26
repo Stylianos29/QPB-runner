@@ -2,9 +2,9 @@
 
 
 ###############################################################################
-# main_scripts/setup.sh - Script for setting up qpb_parameters_scan
+# main_scripts/setup.sh - Script for setting up QPB-runner
 #
-# This script automates the setup of qpb_parameters_scan by copying essential
+# This script automates the setup of QPB-runner by copying essential
 # scripts and input files to a specified destination directory. It ensures that
 # all required files are present, appropriately modified, and placed in a newly
 # created dedicated directory inside the destination.
@@ -67,12 +67,12 @@ export SCRIPT_TERMINATION_MESSAGE="\n\t\t"$(echo "$CURRENT_SCRIPT_NAME" \
 
 # SOURCE LIBRARY SCRIPTS
 
-# Extract full path of "qpb_parameters_scan/main_scripts" directory containing
+# Extract full path of "QPB-runner/main_scripts" directory containing
 # "setup.sh". "${BASH_SOURCE[0]}" ensures the correct path is obtained even when
 # script is sourced.
 MAIN_SCRIPTS_DIRECTORY_FULL_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source all library scripts from "qpb_parameters_scan/library"
+# Source all library scripts from "QPB-runner/library"
 # using a loop avoiding this way name-specific sourcing and thus potential typos
 sourced_scripts_count=0 # Initialize a counter for sourced files
 for custom_functions_script in $(realpath \
@@ -87,7 +87,7 @@ done
 # Check whether any files were sourced
 if [ $sourced_scripts_count -gt 0 ]; then
     log "INFO" "A total of $sourced_scripts_count library scripts "\
-"from qpb_parameters_scan/library were successfully sourced."
+"from QPB-runner/library were successfully sourced."
 else
     ERROR_MESSAGE="No library scripts were sourced at all."
     echo "ERROR: "$ERROR_MESSAGE

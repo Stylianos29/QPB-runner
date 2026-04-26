@@ -56,11 +56,11 @@ export SCRIPT_TERMINATION_MESSAGE="\n\t\t"$(echo "$CURRENT_SCRIPT_NAME" \
 
 # SOURCE LIBRARY SCRIPTS
 
-# NOTE: "qpb_parameters_scan" project directory path is set by "setup.sh" here
+# NOTE: "QPB-runner" project directory path is set by "setup.sh" here
 # and not in the input file to prevent accidental modification.
 QPB_PARAMETERS_SCAN_PROJECT_DIRECTORY_FULL_PATH=
 if [ ! -d "$QPB_PARAMETERS_SCAN_PROJECT_DIRECTORY_FULL_PATH" ]; then
-    ERROR_MESSAGE="Invalid 'qpb_parameters_scan' project directory path."
+    ERROR_MESSAGE="Invalid 'QPB-runner' project directory path."
     echo "ERROR: "$ERROR_MESSAGE
     echo "Exiting..."
     # Log error explicitly since "log()" function hasn't been sourced yet
@@ -70,7 +70,7 @@ if [ ! -d "$QPB_PARAMETERS_SCAN_PROJECT_DIRECTORY_FULL_PATH" ]; then
     exit 1
 fi
 
-# Source all custom functions scripts from "qpb_parameters_scan/library" using a
+# Source all custom functions scripts from "QPB-runner/library" using a
 # loop avoiding this way name-specific sourcing and thus potential typos
 sourced_scripts_count=0 # Initialize a counter for sourced files
 for custom_functions_script in $(realpath \
@@ -85,7 +85,7 @@ done
 # Check whether any files were sourced
 if [ $sourced_scripts_count -gt 0 ]; then
     log "INFO" "A total of $sourced_scripts_count custom functions scripts "\
-"from qpb_parameters_scan/library were successfully sourced."
+"from QPB-runner/library were successfully sourced."
 else
     ERROR_MESSAGE="No custom functions scripts were sourced at all."
     echo "ERROR: "$ERROR_MESSAGE

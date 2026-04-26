@@ -19,7 +19,7 @@ UNITTEST_FRAMEWORK_SH_INCLUDED=1
 # SOURCE DEPENDENCIES
 
 LIBRARY_SCRIPTS_DIRECTORY_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Source all custom functions scripts from "qpb_parameters_scan/library" using a
+# Source all custom functions scripts from "QPB-runner/library" using a
 # loop avoiding this way name-specific sourcing and thus potential typos
 for library_script in "$LIBRARY_SCRIPTS_DIRECTORY_PATH";
 do
