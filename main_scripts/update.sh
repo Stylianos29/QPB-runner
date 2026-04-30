@@ -35,7 +35,7 @@
 # NOTE: This variable storing the current script's path is used by "setup.sh"
 export CURRENT_SCRIPT_FULL_PATH=$(realpath "$0")
 
-# Extract directory two levels above the "qpb_parameters_scan_files" directory
+# Extract directory two levels above the "runner" directory
 DESTINATION_DIRECTORY_PATH=$(dirname "$(dirname "$CURRENT_SCRIPT_FULL_PATH")")
 
 # Change to the "main_scripts" directory of the "QPB-runner"

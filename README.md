@@ -20,7 +20,7 @@ manual changes to input files.
 
 # Instructions
 
-1. **Navigate** to `<main_program_directory>/qpb_parameters_scan_files`.
+1. **Navigate** to `<main_program_directory>/runner`.
 2. **Read** the `input_file_instructions.md` file for detailed guidelines on
    filling in the `input.txt` file.
 3. **Set** the appropriate values in `input.txt` according to the parameter scan

@@ -154,19 +154,18 @@ check_if_directory_exists "$DESTINATION_DIRECTORY_PATH" "$ERROR_MESSAGE" \
                                                                     || exit 1
 log "INFO" "Destination directory path is: '"$DESTINATION_DIRECTORY_PATH"'."
 
-# NOTE: Setup files will be copied to a setup directory within the destination
-# directory. If "setup.sh" runs directly, "qpb_parameters_scan_files" directory
-# will be created (if absent) inside the destination directory for copying the
-# files. If "setup.sh" is sourced by another script, the files will be copied to
-# that script's parent directory.
+# NOTE: Setup files will be copied to a setup directory within the
+# destination directory. If "setup.sh" runs directly, "runner" directory
+# will be created (if absent) inside the destination directory for
+# copying the files. If "setup.sh" is sourced by another script, the
+# files will be copied to that script's parent directory.
 if [[ "$CURRENT_SCRIPT_NAME" == "setup.sh" ]]; then
-    DESTINATION_SETUP_DIRECTORY_PATH="${DESTINATION_DIRECTORY_PATH}"\
-"/qpb_parameters_scan_files" # Default setup directory
-    # Create "qpb_parameters_scan_files" directory if it doesn't exist
+    # Default setup directory
+    DESTINATION_SETUP_DIRECTORY_PATH="${DESTINATION_DIRECTORY_PATH}/runner"
+    # Create "runner" directory if it doesn't exist
     if [ ! -d "$DESTINATION_SETUP_DIRECTORY_PATH" ]; then
         mkdir -p "$DESTINATION_SETUP_DIRECTORY_PATH"
-        log "INFO" "'qpb_parameters_scan_files' directory created inside "\
-        "destination directory."
+        log "INFO" "'runner' directory created inside destination directory."
     fi
 else
     DESTINATION_SETUP_DIRECTORY_PATH="$(dirname "$CURRENT_SCRIPT_FULL_PATH")"
