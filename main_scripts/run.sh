@@ -28,7 +28,7 @@
 # ADDITIONAL SBATCH OPTIONS
 
 #SBATCH --ntasks-per-node=16
-#SBATCH --partition=nehalem
+#SBATCH --partition=cpu
 
 # DEPENDENCIES
 

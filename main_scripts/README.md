@@ -211,21 +211,20 @@ ADDITIONAL_TEXT_TO_BE_PRINTED=
 ################################# SLURM OPTIONS ################################
 Options necessary for the successful submission of Slurm jobs on the cluster
 
-Select partition for job. Please note that on Cyclone the options are "p100" or
-"nehalem". For example:
+Select partition for job. For example:
 ```
-PARTITION_NAME="nehalem"
+PARTITION_NAME="cpu"
 ```
 Please note that the product of MPI_GEOMETRY equals the total number of cores
 used for the job. For example:
 ```
 MPI_GEOMETRY="2,2,2"
 ```
-Please note that on Cyclone you can only use 1, 2, or 4 nodes. For example:
+Please note that on cpu you can only use 1, 2, or 4 nodes. For example:
 ```
 NUMBER_OF_NODES=1
 ```
-Please note that on Cyclone maximum 16 for "nehalem" and 32 for "p100". For
+Please note that on cpu maximum 16 for "cpu" and 32 for "p100". For
 example:
 ```
 NTASKS_PER_NODE=16
