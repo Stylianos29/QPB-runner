@@ -371,6 +371,66 @@ log "INFO" "Passed elements to 'LIST_OF_UPDATED_CONSTANT_VALUES' array "\
 constant_parameters_update LIST_OF_UPDATED_CONSTANT_VALUES \
                                             || { echo "Exiting..."; exit 1; }
 
+# AUTO-ENABLE PRECONDITIONING (KL_invert only)
+if [[ "${overlap_operator_method_label}" == "KL_invert" ]]; then
+    preconditioner_param_names=(
+        "PRECONDITIONER_MASS"
+        "PRECONDITIONER_EPSILON"
+        "PRECONDITIONER_MAX_ITERATIONS"
+    )
+
+    # Normalize the user-supplied PRECONDITIONING value
+    if [[ -z "${PRECONDITIONING}" ]]; then
+        PRECONDITIONING="no"
+    else
+        # Lowercase the input
+        PRECONDITIONING="${PRECONDITIONING,,}"
+        case "${PRECONDITIONING}" in
+            yes|y) PRECONDITIONING="yes" ;;
+            no|n)  PRECONDITIONING="no"  ;;
+            *)
+                ERROR_MESSAGE="Invalid 'PRECONDITIONING' value. Must be "\
+                                    "'yes'/'y' or 'no'/'n' (case-insensitive)."
+                termination_output "${ERROR_MESSAGE}"
+                exit 1
+                ;;
+        esac
+    fi
+
+    # Auto-enable if any preconditioner parameter is varying
+    if [[ "${PRECONDITIONING}" != "yes" ]]; then
+        for name in "${preconditioner_param_names[@]}"; do
+            if [[ " ${varying_iterable_parameters_names_array[*]} " \
+                                                    =~ " ${name} " ]]; then
+                PRECONDITIONING="yes"
+                break
+            fi
+        done
+    fi
+
+    # Auto-enable if any preconditioner parameter appears in updated constants
+    if [[ "${PRECONDITIONING}" != "yes" ]]; then
+        for item in "${LIST_OF_UPDATED_CONSTANT_VALUES[@]}"; do
+            IFS='=' read -r key _ <<< "$item"
+            for name in "${preconditioner_param_names[@]}"; do
+                if [[ "$key" == "$name" ]]; then
+                    PRECONDITIONING="yes"
+                    break 2
+                fi
+            done
+        done
+    fi
+
+    # If disabled, force the three preconditioner values to zero
+    if [[ "${PRECONDITIONING}" == "no" ]]; then
+        PRECONDITIONER_MASS="0.0"
+        PRECONDITIONER_EPSILON="0.0"
+        PRECONDITIONER_MAX_ITERATIONS="0"
+    fi
+
+    log "INFO" "Preconditioning is set to '${PRECONDITIONING}'."
+fi
+
 # CHECK CONSTANT ITERABLE PARAMETERS TO BE PRINTED
 
 # Check LIST_OF_CONSTANT_ITERABLE_PARAMETERS_INDICES_TO_BE_PRINTED array
@@ -511,6 +571,14 @@ for parameter in "${constant_parameters_names_array[@]}"; do
             exit 1;
             }
 done
+
+# Replace _PRECONDITIONING_ placeholder (KL_invert only)
+if [[ "${overlap_operator_method_label}" == "KL_invert" ]]; then
+    sed -i "s@_PRECONDITIONING_@${PRECONDITIONING}@g" \
+                                    "$TEMPLATE_PARAMETERS_FILE_FULL_PATH" \
+        || { error_message="Could not pass PRECONDITIONING value to template";
+             termination_output "$error_message"; exit 1; }
+fi
 
 log "INFO" "Parameters files template was partially filled."
 

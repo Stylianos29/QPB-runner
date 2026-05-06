@@ -132,6 +132,9 @@ KL_INVERT_SPECIFIC_ITERABLE_PARAMETERS_NAMES_ARRAY=(
     )
 
 # Initialize KL-invert-specific iterable parameters with default values
+# Default: preconditioning disabled (overridden automatically in scan.sh
+# if any preconditioner parameter is set or varied)
+PRECONDITIONING="no"
 PRECONDITIONER_MASS="0.0"
 PRECONDITIONER_EPSILON="1e-4"
 PRECONDITIONER_MAX_ITERATIONS="1000"
