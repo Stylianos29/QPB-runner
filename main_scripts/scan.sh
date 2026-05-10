@@ -374,6 +374,7 @@ constant_parameters_update LIST_OF_UPDATED_CONSTANT_VALUES \
 # AUTO-ENABLE PRECONDITIONING (KL_invert only)
 if [[ "${overlap_operator_method_label}" == "KL_invert" ]]; then
     preconditioner_param_names=(
+        "PRECONDITIONER_ORDER"
         "PRECONDITIONER_MASS"
         "PRECONDITIONER_EPSILON"
         "PRECONDITIONER_MAX_ITERATIONS"
@@ -423,6 +424,7 @@ if [[ "${overlap_operator_method_label}" == "KL_invert" ]]; then
 
     # If disabled, force the three preconditioner values to zero
     if [[ "${PRECONDITIONING}" == "no" ]]; then
+        PRECONDITIONER_ORDER="0"
         PRECONDITIONER_MASS="0.0"
         PRECONDITIONER_EPSILON="0.0"
         PRECONDITIONER_MAX_ITERATIONS="0"
