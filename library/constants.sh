@@ -73,6 +73,9 @@ COMMON_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY=(
     )
 
 # Initialize "invert" common iterable parameters with default values
+# Default outer (or sole) solver type for all *_invert main programs.
+# Accepted normalized values: "cg", "bicgstab", "bicgg5", "mscg".
+OUTER_SOLVER="cg"
 SOLVER_EPSILON=1e-8
 SOLVER_MAX_ITERATIONS=10000
 

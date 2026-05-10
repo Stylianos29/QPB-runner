@@ -371,6 +371,33 @@ log "INFO" "Passed elements to 'LIST_OF_UPDATED_CONSTANT_VALUES' array "\
 constant_parameters_update LIST_OF_UPDATED_CONSTANT_VALUES \
                                             || { echo "Exiting..."; exit 1; }
 
+# OUTER SOLVER NORMALIZATION (invert main programs only)
+if [[ "${MAIN_PROGRAM_IS_INVERT}" == "True" ]]; then
+    if [[ -z "${OUTER_SOLVER}" ]]; then
+        OUTER_SOLVER="cg"
+    else
+        # Lowercase + strip non-alphanumeric chars so "BiCG-stab",
+        # "BiCGgamma5", "ms-CG", etc. all normalize cleanly
+        outer_solver_normalized="${OUTER_SOLVER,,}"
+        outer_solver_normalized="${outer_solver_normalized//[^a-z0-9]/}"
+        case "${outer_solver_normalized}" in
+            cg)                OUTER_SOLVER="cg" ;;
+            bicgstab)          OUTER_SOLVER="bicgstab" ;;
+            bicgg5|bicggamma5) OUTER_SOLVER="bicgg5" ;;
+            mscg)              OUTER_SOLVER="mscg" ;;
+            *)
+                ERROR_MESSAGE="Invalid 'OUTER_SOLVER' value "
+                ERROR_MESSAGE+="'${OUTER_SOLVER}'. Must be 'cg', "
+                ERROR_MESSAGE+="'bicgstab', 'bicgg5'/'bicggamma5', or 'mscg' "
+                ERROR_MESSAGE+="(case-insensitive)."
+                termination_output "${ERROR_MESSAGE}"
+                exit 1
+                ;;
+        esac
+    fi
+    log "INFO" "Outer solver is set to '${OUTER_SOLVER}'."
+fi
+
 # AUTO-ENABLE PRECONDITIONING (KL_invert only)
 if [[ "${overlap_operator_method_label}" == "KL_invert" ]]; then
     preconditioner_param_names=(
@@ -573,6 +600,14 @@ for parameter in "${constant_parameters_names_array[@]}"; do
             exit 1;
             }
 done
+
+# Replace _OUTER_SOLVER_ placeholder (invert main programs only)
+if [[ "${MAIN_PROGRAM_IS_INVERT}" == "True" ]]; then
+    sed -i "s@_OUTER_SOLVER_@${OUTER_SOLVER}@g" \
+        "$TEMPLATE_PARAMETERS_FILE_FULL_PATH" \
+        || { error_message="Could not pass OUTER_SOLVER value to template";
+             termination_output "$error_message"; exit 1; }
+fi
 
 # Replace _PRECONDITIONING_ placeholder (KL_invert only)
 if [[ "${overlap_operator_method_label}" == "KL_invert" ]]; then
