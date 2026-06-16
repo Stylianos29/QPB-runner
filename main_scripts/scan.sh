@@ -398,14 +398,26 @@ if [[ "${MAIN_PROGRAM_IS_INVERT}" == "True" ]]; then
     log "INFO" "Outer solver is set to '${OUTER_SOLVER}'."
 fi
 
-# AUTO-ENABLE PRECONDITIONING (KL_invert only)
-if [[ "${overlap_operator_method_label}" == "KL_invert" ]]; then
-    preconditioner_param_names=(
-        "PRECONDITIONER_EPSILON"
-        "PRECONDITIONER_MAX_ITERATIONS"
-        "PRECONDITIONER_MSCG_EPSILON"
-    )
+# AUTO-ENABLE PRECONDITIONING (invert programs that support it)
+preconditioner_param_names=()
+case "${overlap_operator_method_label}" in
+    KL_invert)
+        preconditioner_param_names=(
+            "PRECONDITIONER_ORDER"
+            "PRECONDITIONER_MASS"
+            "PRECONDITIONER_EPSILON"
+            "PRECONDITIONER_MAX_ITERATIONS"
+        )
+        ;;
+    Zolotarev_invert)
+        preconditioner_param_names=(
+            "PRECONDITIONER_EPSILON"
+            "PRECONDITIONER_MAX_ITERATIONS"
+        )
+        ;;
+esac
 
+if [[ ${#preconditioner_param_names[@]} -gt 0 ]]; then
     # Normalize the user-supplied PRECONDITIONING value
     if [[ -z "${PRECONDITIONING}" ]]; then
         PRECONDITIONING="no"
@@ -448,11 +460,20 @@ if [[ "${overlap_operator_method_label}" == "KL_invert" ]]; then
         done
     fi
 
-    # If disabled, force the three preconditioner values to zero
+    # If disabled, force the preconditioner values to their disabled defaults
     if [[ "${PRECONDITIONING}" == "no" ]]; then
-        PRECONDITIONER_EPSILON="0.0"
-        PRECONDITIONER_MAX_ITERATIONS="0"
-        PRECONDITIONER_MSCG_EPSILON="0.0"
+        case "${overlap_operator_method_label}" in
+            KL_invert)
+                PRECONDITIONER_ORDER="0"
+                PRECONDITIONER_MASS="0.0"
+                PRECONDITIONER_EPSILON="0.0"
+                PRECONDITIONER_MAX_ITERATIONS="0"
+                ;;
+            Zolotarev_invert)
+                PRECONDITIONER_EPSILON="0.0"
+                PRECONDITIONER_MAX_ITERATIONS="0"
+                ;;
+        esac
     fi
 
     log "INFO" "Preconditioning is set to '${PRECONDITIONING}'."
@@ -607,8 +628,9 @@ if [[ "${MAIN_PROGRAM_IS_INVERT}" == "True" ]]; then
              termination_output "$error_message"; exit 1; }
 fi
 
-# Replace _PRECONDITIONING_ placeholder (KL_invert only)
-if [[ "${overlap_operator_method_label}" == "KL_invert" ]]; then
+# Replace _PRECONDITIONING_ placeholder (invert programs that support it)
+if [[ "${overlap_operator_method_label}" == "KL_invert" \
+        || "${overlap_operator_method_label}" == "Zolotarev_invert" ]]; then
     sed -i "s@_PRECONDITIONING_@${PRECONDITIONING}@g" \
                                     "$TEMPLATE_PARAMETERS_FILE_FULL_PATH" \
         || { error_message="Could not pass PRECONDITIONING value to template";

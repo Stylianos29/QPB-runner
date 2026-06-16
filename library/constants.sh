@@ -171,6 +171,18 @@ ZOLOTAREV_ORDER="1"
 # NOTE: SCALING_FACTOR, LANCZOS_EPSILON, LANCZOS_MAX_ITERATIONS, DELTA_MIN, 
 # and DELTA_MAX are already initialized in the KL and Chebyshev sections above
 
+# Additional iterable parameters specific to the "Zolotarev invert" main program
+# Reuse the existing PRECONDITIONER_* registry (labels/validation/generators
+# already defined in the KL-invert section). Semantics for Zolotarev:
+#   PRECONDITIONER_EPSILON        -> preconditioner MSCG tolerance
+#   PRECONDITIONER_MAX_ITERATIONS -> fixed preconditioner BiCGStab step count
+ZOLOTAREV_INVERT_SPECIFIC_ITERABLE_PARAMETERS_NAMES_ARRAY=(
+        "PRECONDITIONER_EPSILON" \
+        "PRECONDITIONER_MAX_ITERATIONS"
+    )
+# Defaults for PRECONDITIONING / PRECONDITIONER_EPSILON / PRECONDITIONER_MAX_ITERATIONS
+# are already initialized in the KL-invert section above.
+
 # Construct various iterable parameters names arrays by combining the above
 
 # Bare
@@ -217,6 +229,7 @@ ZOLOTAREV_ITERABLE_PARAMETERS_NAMES_ARRAY+=(${ZOLOTAREV_SPECIFIC_ITERABLE_PARAME
 # Zolotarev invert
 ZOLOTAREV_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY=(${ZOLOTAREV_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
 ZOLOTAREV_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY+=(${COMMON_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
+ZOLOTAREV_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY+=(${ZOLOTAREV_INVERT_SPECIFIC_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
 
 # Pass the names of the above iterable parameters arrays to a dictionary
 declare -A ITERABLE_PARAMETERS_NAMES_DICTIONARY
