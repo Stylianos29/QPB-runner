@@ -405,13 +405,15 @@ case "${overlap_operator_method_label}" in
         preconditioner_param_names=(
             "PRECONDITIONER_ORDER"
             "PRECONDITIONER_MASS"
-            "PRECONDITIONER_EPSILON"
+            "PRECONDITIONER_SOLVER_EPSILON"
+            "PRECONDITIONER_MSCG_EPSILON"
             "PRECONDITIONER_MAX_ITERATIONS"
         )
         ;;
     Zolotarev_invert)
         preconditioner_param_names=(
-            "PRECONDITIONER_EPSILON"
+            "PRECONDITIONER_SOLVER_EPSILON"
+            "PRECONDITIONER_MSCG_EPSILON"
             "PRECONDITIONER_MAX_ITERATIONS"
         )
         ;;
@@ -466,11 +468,13 @@ if [[ ${#preconditioner_param_names[@]} -gt 0 ]]; then
             KL_invert)
                 PRECONDITIONER_ORDER="0"
                 PRECONDITIONER_MASS="0.0"
-                PRECONDITIONER_EPSILON="0.0"
+                PRECONDITIONER_SOLVER_EPSILON="0.0"
+                PRECONDITIONER_MSCG_EPSILON="0.0"
                 PRECONDITIONER_MAX_ITERATIONS="0"
                 ;;
             Zolotarev_invert)
-                PRECONDITIONER_EPSILON="0.0"
+                PRECONDITIONER_SOLVER_EPSILON="0.0"
+                PRECONDITIONER_MSCG_EPSILON="0.0"
                 PRECONDITIONER_MAX_ITERATIONS="0"
                 ;;
         esac
