@@ -403,7 +403,7 @@ preconditioner_param_names=()
 case "${overlap_operator_method_label}" in
     KL_invert|Zolotarev_invert)
         preconditioner_param_names=(
-            "PRECONDITIONER_SOLVER_EPSILON"
+            "PRECONDITIONER_EPSILON"
             "PRECONDITIONER_MSCG_EPSILON"
             "PRECONDITIONER_MAX_ITERATIONS"
         )
@@ -455,7 +455,7 @@ if [[ ${#preconditioner_param_names[@]} -gt 0 ]]; then
 
     # If disabled, force the preconditioner values to their disabled defaults
     if [[ "${PRECONDITIONING}" == "no" ]]; then
-        PRECONDITIONER_SOLVER_EPSILON="0.0"
+        PRECONDITIONER_EPSILON="0.0"
         PRECONDITIONER_MSCG_EPSILON="0.0"
         PRECONDITIONER_MAX_ITERATIONS="0"
     fi
