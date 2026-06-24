@@ -127,16 +127,17 @@ SOLVER_INNER_EPSILON=1e-10
 SOLVER_INNER_MAX_ITERATIONS=10000
 SCALING_FACTOR="1.0"
 
-# Additional iterable parameters specific to the "KL invert" main program
-KL_INVERT_SPECIFIC_ITERABLE_PARAMETERS_NAMES_ARRAY=(
-        "PRECONDITIONER_ORDER" \
-        "PRECONDITIONER_MASS" \
+# Iterable parameters common to all preconditioned "invert" main programs
+# (currently KL-invert and Zolotarev-invert). The three preconditioner-solver
+# controls share identical names, semantics, and registry entries across both
+# methods, so they are defined once here.
+PRECONDITIONED_INVERT_SPECIFIC_ITERABLE_PARAMETERS_NAMES_ARRAY=(
         "PRECONDITIONER_SOLVER_EPSILON" \
         "PRECONDITIONER_MSCG_EPSILON" \
         "PRECONDITIONER_MAX_ITERATIONS"
     )
 
-# Initialize KL-invert-specific iterable parameters with default values
+# Initialize preconditioner parameters with default values
 # Default: preconditioning disabled (overridden automatically in scan.sh
 # if any preconditioner parameter is set or varied)
 PRECONDITIONING="no"
@@ -173,19 +174,6 @@ ZOLOTAREV_ORDER="1"
 # NOTE: SCALING_FACTOR, LANCZOS_EPSILON, LANCZOS_MAX_ITERATIONS, DELTA_MIN, 
 # and DELTA_MAX are already initialized in the KL and Chebyshev sections above
 
-# Additional iterable parameters specific to the "Zolotarev invert" main program
-# Reuse the existing PRECONDITIONER_* registry (labels/validation/generators
-# already defined in the KL-invert section). Semantics for Zolotarev:
-#   PRECONDITIONER_EPSILON        -> preconditioner MSCG tolerance
-#   PRECONDITIONER_MAX_ITERATIONS -> fixed preconditioner BiCGStab step count
-ZOLOTAREV_INVERT_SPECIFIC_ITERABLE_PARAMETERS_NAMES_ARRAY=(
-        "PRECONDITIONER_SOLVER_EPSILON" \
-        "PRECONDITIONER_MSCG_EPSILON" \
-        "PRECONDITIONER_MAX_ITERATIONS"
-    )
-# Defaults for PRECONDITIONING / PRECONDITIONER_EPSILON / PRECONDITIONER_MAX_ITERATIONS
-# are already initialized in the KL-invert section above.
-
 # Construct various iterable parameters names arrays by combining the above
 
 # Bare
@@ -213,7 +201,7 @@ KL_ITERABLE_PARAMETERS_NAMES_ARRAY+=(${KL_SPECIFIC_ITERABLE_PARAMETERS_NAMES_ARR
 # KL invert
 KL_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY=(${KL_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
 KL_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY+=(${COMMON_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
-KL_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY+=(${KL_INVERT_SPECIFIC_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
+KL_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY+=(${PRECONDITIONED_INVERT_SPECIFIC_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
 
 # Neuberger
 NEUBERGER_ITERABLE_PARAMETERS_NAMES_ARRAY=(${COMMON_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
@@ -232,7 +220,7 @@ ZOLOTAREV_ITERABLE_PARAMETERS_NAMES_ARRAY+=(${ZOLOTAREV_SPECIFIC_ITERABLE_PARAME
 # Zolotarev invert
 ZOLOTAREV_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY=(${ZOLOTAREV_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
 ZOLOTAREV_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY+=(${COMMON_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
-ZOLOTAREV_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY+=(${ZOLOTAREV_INVERT_SPECIFIC_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
+ZOLOTAREV_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY+=(${PRECONDITIONED_INVERT_SPECIFIC_ITERABLE_PARAMETERS_NAMES_ARRAY[@]})
 
 # Pass the names of the above iterable parameters arrays to a dictionary
 declare -A ITERABLE_PARAMETERS_NAMES_DICTIONARY

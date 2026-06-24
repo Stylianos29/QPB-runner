@@ -401,16 +401,7 @@ fi
 # AUTO-ENABLE PRECONDITIONING (invert programs that support it)
 preconditioner_param_names=()
 case "${overlap_operator_method_label}" in
-    KL_invert)
-        preconditioner_param_names=(
-            "PRECONDITIONER_ORDER"
-            "PRECONDITIONER_MASS"
-            "PRECONDITIONER_SOLVER_EPSILON"
-            "PRECONDITIONER_MSCG_EPSILON"
-            "PRECONDITIONER_MAX_ITERATIONS"
-        )
-        ;;
-    Zolotarev_invert)
+    KL_invert|Zolotarev_invert)
         preconditioner_param_names=(
             "PRECONDITIONER_SOLVER_EPSILON"
             "PRECONDITIONER_MSCG_EPSILON"
@@ -464,20 +455,9 @@ if [[ ${#preconditioner_param_names[@]} -gt 0 ]]; then
 
     # If disabled, force the preconditioner values to their disabled defaults
     if [[ "${PRECONDITIONING}" == "no" ]]; then
-        case "${overlap_operator_method_label}" in
-            KL_invert)
-                PRECONDITIONER_ORDER="0"
-                PRECONDITIONER_MASS="0.0"
-                PRECONDITIONER_SOLVER_EPSILON="0.0"
-                PRECONDITIONER_MSCG_EPSILON="0.0"
-                PRECONDITIONER_MAX_ITERATIONS="0"
-                ;;
-            Zolotarev_invert)
-                PRECONDITIONER_SOLVER_EPSILON="0.0"
-                PRECONDITIONER_MSCG_EPSILON="0.0"
-                PRECONDITIONER_MAX_ITERATIONS="0"
-                ;;
-        esac
+        PRECONDITIONER_SOLVER_EPSILON="0.0"
+        PRECONDITIONER_MSCG_EPSILON="0.0"
+        PRECONDITIONER_MAX_ITERATIONS="0"
     fi
 
     log "INFO" "Preconditioning is set to '${PRECONDITIONING}'."
