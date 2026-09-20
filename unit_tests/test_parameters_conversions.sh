@@ -176,4 +176,127 @@ test_calculate_number_of_tasks_from_mpi_geometry() {
 # - match_configuration_label_to_file()
 # - extract_lattice_dimensions_label_with_value()
 
+
+test_fnv1a_hash() {
+    # NOTE: The expected values are those of a reference 32-bit FNV-1a
+    # implementation. Pinning them guards the pure-Bash arithmetic, in
+    # particular the 32-bit masking, against silent regressions.
+    test_input_values_list=("" "a" "test" "0024200#0")
+    expected_output_values_list=(\
+            "2166136261" "3826002220" "2949673445" "3887519472")
+
+    assert_multiple_function_outputs fnv1a_hash \
+                            test_input_values_list expected_output_values_list
+}
+
+
+test_fmix32_finalizer() {
+    # NOTE: The expected values are those of the reference MurmurHash3 32-bit
+    # finalizer. They guard the 16-bit-halves multiplication, which is what
+    # keeps the two mixing constants from overflowing Bash signed arithmetic.
+    test_input_values_list=("0" "1" "3887519472")
+    expected_output_values_list=("0" "1364076727" "168184442")
+
+    assert_multiple_function_outputs fmix32_finalizer \
+                            test_input_values_list expected_output_values_list
+}
+
+
+test_gauge_shifts_from_configuration_label() {
+    # The function falls back on "LATTICE_DIMENSIONS" when no dimensions are
+    # passed. NOTE: Bash dynamic scoping makes this local visible to it.
+    local LATTICE_DIMENSIONS="48 24 24 24"
+
+    # Positive tests
+    test_input_values_list=("0024200" "0024400" "0024600" "0000200" "0060000")
+    expected_output_values_list=(\
+            "26 9 15 14" \
+            "23 23 21 4" \
+            "24 4 16 5" \
+            "35 10 12 8" \
+            "7 0 2 12" \
+        )
+
+    assert_multiple_function_outputs gauge_shifts_from_configuration_label \
+            test_input_values_list expected_output_values_list || return 1
+
+    # The dimensions may also be passed explicitly, overriding the global
+    local shifts=$(gauge_shifts_from_configuration_label "0024200" \
+                                                            "32 16 16 16")
+    [ "$shifts" == "26 1 15 6" ] || return 1
+
+    # Every component must stay within the bounds of its own dimension
+    is_valid_gauge_shifts "$shifts" "32 16 16 16" || return 1
+
+    # The mapping must be reproducible
+    [ "$(gauge_shifts_from_configuration_label "0024200")" \
+        == "$(gauge_shifts_from_configuration_label "0024200")" ] || return 1
+
+    # Negative tests: empty label, and malformed lattice dimensions
+    ! gauge_shifts_from_configuration_label "" > /dev/null 2>&1 || return 1
+    ! gauge_shifts_from_configuration_label "0024200" "48 24 24" \
+                                                > /dev/null 2>&1 || return 1
+    ! gauge_shifts_from_configuration_label "0024200" "48 24 24 abc" \
+                                                > /dev/null 2>&1 || return 1
+}
+
+
+test_gauge_shifts_are_well_spread() {
+:   '
+    Regression test for the decorrelation of the derived gauge shifts.
+
+    Configuration labels of an ensemble are sparse and regular, typically
+    advancing in steps of 200. Counting how many distinct values each single
+    direction takes is NOT enough to detect a poor mapping: a mapping whose
+    four directions are strongly correlated with each other still covers every
+    single-direction value. What this test therefore checks is the number of
+    distinct shift 4-tuples and the number of distinct relative offsets between
+    directions. Reducing an unavalanched FNV-1a hash modulo a lattice dimension
+    yields only 53 distinct tuples and 6 distinct offsets here, against the 300
+    and 24 of a well spread mapping.
+    '
+
+    local LATTICE_DIMENSIONS="48 24 24 24"
+    local ensemble_size=300
+
+    local index label shifts
+    local shifts_array=()
+    for (( index = 1; index <= ensemble_size; index++ )); do
+        printf -v label "%07d" $(( 200 * index ))
+        shifts_array+=("$(gauge_shifts_from_configuration_label "$label")")
+    done
+
+    # Count the distinct shift 4-tuples
+    local distinct_tuples=$(printf '%s\n' "${shifts_array[@]}" | sort -u | wc -l)
+    [ "$distinct_tuples" -ge 280 ] || {
+        echo "ERROR: Only ${distinct_tuples} distinct gauge shifts tuples out"\
+            "of ${ensemble_size} configurations."
+        return 1
+        }
+
+    # Count the distinct offsets between the 2nd and the 3rd direction
+    local distinct_offsets=$(printf '%s\n' "${shifts_array[@]}" \
+        | awk '{ print ($3 - $2 + 24) % 24 }' | sort -u | wc -l)
+    [ "$distinct_offsets" -ge 20 ] || {
+        echo "ERROR: Only ${distinct_offsets} distinct offsets between the"\
+            "2nd and the 3rd direction; the directions are correlated."
+        return 1
+        }
+}
+
+
+test_default_gauge_shifts() {
+    test_input_values_list=(\
+            "Bare_invert" "KL_invert" "Zolotarev_invert" \
+            "Bare" "KL" "Chebyshev" "Zolotarev" "Neuberger" \
+        )
+    expected_output_values_list=(\
+            "0 0 0 0" "0 0 0 0" "0 0 0 0" \
+            "14 7 6 2" "14 7 6 2" "14 7 6 2" "14 7 6 2" "14 7 6 2" \
+        )
+
+    assert_multiple_function_outputs default_gauge_shifts \
+                            test_input_values_list expected_output_values_list
+}
+
 unittest $unittest_option

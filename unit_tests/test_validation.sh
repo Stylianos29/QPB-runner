@@ -385,4 +385,64 @@ test_check_arrays_same_length() {
 # #           echo $output      
 # # }
 
+
+test_is_valid_gauge_shifts() {
+    # The function falls back on "LATTICE_DIMENSIONS" when no dimensions are
+    # passed. NOTE: Bash dynamic scoping makes this local visible to it.
+    local LATTICE_DIMENSIONS="48 24 24 24"
+
+    test_input_values_list=(\
+            # The "auto" keyword requests deriving the shifts from the label
+            "auto" \
+            # Valid explicit values
+            "0 0 0 0" \
+            "14 7 6 2" \
+            "47 23 23 23" \
+            # Upper bounds are exclusive, a shift equal to a dimension is the
+            # very same shift as no shift at all
+            "48 0 0 0" \
+            "0 24 0 0" \
+            "0 0 0 24" \
+            # Out of bounds in the other direction
+            "-1 0 0 0" \
+            # Wrong number of components
+            "0 0 0" \
+            "0 0 0 0 0" \
+            "" \
+            # Non-integer components
+            "abc" \
+            "0 0 0 abc" \
+            "1.5 0 0 0" \
+            # Neither the "auto" keyword nor an explicit value
+            "AUTO" \
+            "yes" \
+        )
+    expected_status_list=(\
+            0 \
+            0 0 0 \
+            1 1 1 \
+            1 \
+            1 1 1 \
+            1 1 1 \
+            1 1 \
+        )
+
+    assert_multiple_validation_function_cases "is_valid_gauge_shifts" \
+                    test_input_values_list expected_status_list || return 1
+
+    # The dimensions may also be passed explicitly, overriding the global
+    is_valid_gauge_shifts "31 15 15 15" "32 16 16 16" || return 1
+    ! is_valid_gauge_shifts "32 0 0 0" "32 16 16 16" || return 1
+
+    # A malformed lattice dimensions value invalidates any explicit value, but
+    # still leaves the "auto" keyword valid, since it is checked before
+    ! is_valid_gauge_shifts "0 0 0 0" "48 24 24" || return 1
+    is_valid_gauge_shifts "auto" "48 24 24" || return 1
+
+    # A component carrying a leading zero must be rejected quietly, without
+    # Bash complaining on stderr about an invalid octal number
+    local captured_stderr=$(is_valid_gauge_shifts "08 0 0 0" 2>&1)
+    [ -z "$captured_stderr" ] || return 1
+}
+
 unittest $unittest_option

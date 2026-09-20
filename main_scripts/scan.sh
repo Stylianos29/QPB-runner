@@ -253,6 +253,30 @@ log "INFO" "The iterable parameters names array that will be used is "\
 declare -n \
 iterable_parameters_names_array="$iterable_parameters_names_array_name"
 
+# SET AND CHECK GAUGE SHIFTS VALUE
+
+# NOTE: "GAUGE_SHIFTS" is set directly in the input file and is deliberately
+# not part of the iterable parameters arrays, so that the parameter indices the
+# user passes to the "<>_INDICES_TO_BE_PRINTED" and
+# "VARYING_PARAMETERS_INDICES_LIST" arrays keep their meaning.
+# An input file predating the introduction of this parameter leaves it unset;
+# fall back to the default of the main program family rather than leaving the
+# "_GAUGE_SHIFTS_" placeholder unreplaced in the parameters files.
+if [ -z "${GAUGE_SHIFTS}" ]; then
+    GAUGE_SHIFTS=$(default_gauge_shifts "$overlap_operator_method_label")
+    log "WARNING" "'GAUGE_SHIFTS' was left unset; defaulting to "\
+"'${GAUGE_SHIFTS}'."
+fi
+if ! is_valid_gauge_shifts "$GAUGE_SHIFTS"; then
+    ERROR_MESSAGE="Invalid 'GAUGE_SHIFTS' value '${GAUGE_SHIFTS}'. Pass either "
+    ERROR_MESSAGE+="'auto' or 4 integers 's_t s_x s_y s_z' satisfying "
+    ERROR_MESSAGE+="0 <= s_i < D_i for lattice dimensions "
+    ERROR_MESSAGE+="'${LATTICE_DIMENSIONS}'."
+    termination_output "${ERROR_MESSAGE}"
+    exit 1
+fi
+log "INFO" "Valid 'GAUGE_SHIFTS' value '${GAUGE_SHIFTS}' was passed."
+
 # ESTABLISH VARYING ITERABLE PARAMETERS SET OF VALUES
 
 # Before checking the validity of the VARYING_PARAMETERS_INDICES_LIST array,
@@ -621,6 +645,21 @@ if [[ "${overlap_operator_method_label}" == "KL_invert" \
              termination_output "$error_message"; exit 1; }
 fi
 
+# Replace the _GAUGE_SHIFTS_ placeholder.
+# NOTE: When the shifts are derived from the configuration label and the
+# configuration label is itself a varying parameter, the shifts differ from job
+# to job and cannot be baked into the shared template; the placeholder is then
+# left in place and filled per job inside the loops below instead.
+GAUGE_SHIFTS_ARE_DEFERRED="False"
+if [ "${GAUGE_SHIFTS}" == "auto" ] && [[ \
+    " ${varying_iterable_parameters_names_array[*]} " \
+                            == *" GAUGE_LINKS_CONFIGURATION_LABEL "* ]]; then
+    GAUGE_SHIFTS_ARE_DEFERRED="True"
+else
+    apply_gauge_shifts "$TEMPLATE_PARAMETERS_FILE_FULL_PATH" \
+        "$GAUGE_LINKS_CONFIGURATION_LABEL" || { echo "Exiting..."; exit 1; }
+fi
+
 log "INFO" "Parameters files template was partially filled."
 
 ############################### JOBS SUBMISSION ################################
@@ -740,6 +779,10 @@ for overall_outer_loop_varying_parameter_value in \
                     $index]}"
                   if [ "$parameter_name" == "GAUGE_LINKS_CONFIGURATION_LABEL" ];
                   then
+                       # NOTE: Capture the label before "parameter_name" is
+                       # overwritten just below; deriving the gauge shifts of
+                       # this job needs it
+                       current_gauge_links_configuration_label="$parameter_value"
                        parameter_name="GAUGE_LINKS_CONFIGURATION_FILE_FULL_PATH"
                         parameter_value=$(match_configuration_label_to_file \
                                                             "$parameter_value")
@@ -770,6 +813,13 @@ for overall_outer_loop_varying_parameter_value in \
 
                 fi
             done
+
+            # Fill in the gauge shifts derived from this job's configuration
+            if [ "${GAUGE_SHIFTS_ARE_DEFERRED}" == "True" ]; then
+                apply_gauge_shifts "$filled_parameters_file_full_path" \
+                        "$current_gauge_links_configuration_label" \
+                                            || { echo "Exiting..."; exit 1; }
+            fi
 
             # For invert main progs, the binary solutions file full path needs
             # to be specified as well inside the parameters file

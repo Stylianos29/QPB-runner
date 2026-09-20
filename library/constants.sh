@@ -46,6 +46,17 @@ KERNEL_OPERATOR_TYPE="Standard"
 QCD_BETA_VALUE="6.20"
 LATTICE_DIMENSIONS="48 24 24 24"
 
+# GAUGE SHIFTS DEFAULT VALUES
+
+# "GAUGE_SHIFTS" is set directly in the input file (like "OUTER_SOLVER" and
+# "PRECONDITIONING") and is deliberately kept out of the iterable parameters
+# arrays, so that the user-facing parameter indices are not renumbered.
+# Its default value depends on the main program family, so that plumbing the
+# "_GAUGE_SHIFTS_" placeholder into the empty parameters files reproduces the
+# values that used to be hardcoded there.
+DEFAULT_INVERT_GAUGE_SHIFTS="0 0 0 0"
+DEFAULT_NON_INVERT_GAUGE_SHIFTS="14 7 6 2"
+
 # ITERABLE PARAMETERS
 
 # Common iterable parameters to all main programs

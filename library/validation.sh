@@ -1308,3 +1308,79 @@ check_arrays_same_length() {
         return 1  # Failure
     fi
 }
+
+
+is_valid_gauge_shifts() {
+:   '
+    is_valid_gauge_shifts() - Check if a value is a valid "Gauge shifts" value
+
+    This function accepts either the literal string "auto", which requests that
+    the shifts be derived from the gauge links configuration label, or an
+    explicit space-separated "s_t s_x s_y s_z" 4-integer value. An explicit
+    value is valid if every component is a non-negative integer strictly
+    smaller than the corresponding lattice dimension. The upper bound is
+    exclusive because a shift is periodic: a shift equal to a lattice dimension
+    is the very same shift as no shift at all.
+
+    Usage:
+    if is_valid_gauge_shifts "$GAUGE_SHIFTS"; then
+        echo "Value is a valid gauge shifts value"
+    fi
+
+    Parameters:
+    1. gauge_shifts: The value to be checked.
+    2. lattice_dimensions (optional): The lattice dimensions as a single
+       space-separated "T X Y Z" string. Defaults to the "LATTICE_DIMENSIONS"
+       global variable.
+
+    Returns:
+    0 if the value is a valid gauge shifts value, otherwise 1.
+
+    Example:
+    is_valid_gauge_shifts "auto"      "48 24 24 24"  # returns 0 (true)
+    is_valid_gauge_shifts "0 0 0 0"   "48 24 24 24"  # returns 0 (true)
+    is_valid_gauge_shifts "14 7 6 2"  "48 24 24 24"  # returns 0 (true)
+    is_valid_gauge_shifts "48 0 0 0"  "48 24 24 24"  # returns 1 (false)
+    is_valid_gauge_shifts "0 0 24 0"  "48 24 24 24"  # returns 1 (false)
+    is_valid_gauge_shifts "-1 0 0 0"  "48 24 24 24"  # returns 1 (false)
+    is_valid_gauge_shifts "0 0 0"     "48 24 24 24"  # returns 1 (false)
+    is_valid_gauge_shifts "abc"       "48 24 24 24"  # returns 1 (false)
+    '
+
+    local gauge_shifts="$1"
+    local lattice_dimensions="${2:-$LATTICE_DIMENSIONS}"
+
+    # The "auto" keyword requests deriving the shifts from the configuration
+    # label; there is nothing else to check in that case
+    if [ "$gauge_shifts" == "auto" ]; then
+        return 0
+    fi
+
+    local shifts_array=($gauge_shifts)
+    local dimensions_array=($lattice_dimensions)
+
+    if [ "${#shifts_array[@]}" -ne 4 ]; then
+        return 1  # Return 1 (failure) if not exactly 4 components were passed
+    fi
+    if [ "${#dimensions_array[@]}" -ne 4 ]; then
+        return 1  # Return 1 (failure) if the lattice dimensions are malformed
+    fi
+
+    local index
+    for (( index = 0; index < 4; index++ )); do
+        # NOTE: The regular expression check precedes the arithmetic ones on
+        # purpose. Bash would interpret a component carrying a leading zero,
+        # such as "08", as an invalid octal number and complain on stderr.
+        if [[ ! "${shifts_array[index]}" =~ ^(0|[1-9][0-9]*)$ ]]; then
+            return 1  # Return 1 (failure) on a non non-negative-integer value
+        fi
+        if ! is_positive_integer "${dimensions_array[index]}"; then
+            return 1  # Return 1 (failure) on a malformed lattice dimension
+        fi
+        if [ "${shifts_array[index]}" -ge "${dimensions_array[index]}" ]; then
+            return 1  # Return 1 (failure) if the shift is out of bounds
+        fi
+    done
+
+    return 0  # Return 0 (success) if the value is a valid gauge shifts value
+}

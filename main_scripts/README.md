@@ -132,6 +132,45 @@ For example:
 KERNEL_OPERATOR_TYPE_FLAG=0
 ```
 
+#### GAUGE SHIFTS
+The `GAUGE_SHIFTS` parameter sets the "Gauge shifts" line of the parameters
+file: the translation applied to the gauge links configuration, given as four
+integers in the same `T X Y Z` order as the `Dimensions` parameter. Each
+component must satisfy `0 <= s_i < D_i`, where `D_i` is the corresponding
+lattice dimension. The upper bound is exclusive because a shift is periodic: a
+shift equal to a lattice dimension is the very same shift as no shift at all.
+
+Like `OUTER_SOLVER` and `PRECONDITIONING`, this parameter is set directly and
+is deliberately not part of the iterable parameters lists, so it carries no
+index and it cannot be chosen as a varying parameter. Its default value is
+`"0 0 0 0"` for the "invert" main programs and `"14 7 6 2"` for the rest, which
+are the values that used to be hardcoded in the respective empty parameters
+files. For example:
+```
+GAUGE_SHIFTS="0 0 0 0"
+```
+
+Alternatively, set the parameter to `auto`:
+```
+GAUGE_SHIFTS="auto"
+```
+in which case the shifts are derived from the gauge links configuration label
+of each run, by hashing it and reducing the result modulo each lattice
+dimension. This is meant for translation averaging: with the point source kept
+at the origin, giving every configuration a different, effectively random
+translation decorrelates the source position across the ensemble.
+
+The derivation is a pure function of the configuration label, so the same
+configuration always receives the same shifts, no matter which other
+configurations are present in the configurations directory, in which order they
+are scanned, or when the run takes place. Two configurations of an ensemble may
+happen to receive the same shifts; this is harmless, since what matters is that
+the translation is decorrelated from the configuration, not that it is unique.
+
+The shifts are not printed in the output filenames. The value actually used by
+each job is recorded both in the parameters file of that job, which is kept in
+the parameters files directory, and in the output log file of the main program.
+
 #### NON-ITERABLE PARAMETERS VALUES PRINTED IN OUTPUT FILENAMES
 Next you need to choose which of the non-iterable parameters you want them to be
 printed in the filename. It's suggested that OVERLAP_OPERATOR_METHOD and

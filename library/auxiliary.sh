@@ -1005,3 +1005,57 @@ parameter_range_of_values_generator_old() {
     # printf '%s\n' "${output_array[@]}"
     echo "${output_array[@]}"
 }
+
+
+apply_gauge_shifts() {
+:   '
+    Function: apply_gauge_shifts
+
+    Description:
+    Replaces the "_GAUGE_SHIFTS_" placeholder inside a parameters file with the
+    working gauge shifts value. If "GAUGE_SHIFTS" was set to "auto", the value
+    is derived from the passed gauge links configuration label; otherwise the
+    explicit value of "GAUGE_SHIFTS" is used as is.
+
+    Parameters:
+    1. parameters_file_full_path: Full path to the parameters file to fill.
+    2. configuration_label: The gauge links configuration label of the run the
+       parameters file corresponds to. Only used in the "auto" case.
+
+    Global Variables:
+    - GAUGE_SHIFTS: Either "auto" or an explicit "s_t s_x s_y s_z" value.
+    - LATTICE_DIMENSIONS: Used by the derivation in the "auto" case.
+
+    Returns:
+    - 0 on success.
+    - 1 if the shifts could not be derived or the replacement failed.
+
+    Usage Example:
+    apply_gauge_shifts "$TEMPLATE_PARAMETERS_FILE_FULL_PATH" "0024200"
+
+    Notes:
+    - This function is called from two places in "scan.sh": once on the
+      template, for runs whose shifts are the same for every job, and once per
+      job inside the loops, for runs in which the configuration label varies
+      and the shifts are derived. Keeping the logic here ensures the two paths
+      cannot drift apart.
+    '
+
+    local parameters_file_full_path="$1"
+    local configuration_label="$2"
+
+    local gauge_shifts_value="$GAUGE_SHIFTS"
+
+    if [ "$gauge_shifts_value" == "auto" ]; then
+        gauge_shifts_value=$(gauge_shifts_from_configuration_label \
+                                                "$configuration_label") || {
+            local error_message="Could not derive gauge shifts from "
+            error_message+="configuration label '${configuration_label}'."
+            termination_output "$error_message"
+            return 1
+            }
+    fi
+
+    replace_string_in_file "$parameters_file_full_path" "_GAUGE_SHIFTS_" \
+                                                    "$gauge_shifts_value"
+}

@@ -565,3 +565,215 @@ extract_lattice_dimensions_label_with_value() {
     # Output the string in a form "T${temporal_dimension}L${spatial_dimension}"
     echo "T${temporal_dimension}L${spatial_dimension}"
 }
+
+
+fnv1a_hash() {
+:   '
+    Function: fnv1a_hash
+
+    Description:
+    Computes the 32-bit FNV-1a hash of the bytes of the passed string. The
+    implementation is pure Bash on purpose: it introduces no dependency on an
+    external hashing utility being available on the cluster, and it produces
+    the exact same value on every platform, so that values derived from it stay
+    reproducible and can be pinned in unit tests.
+
+    Parameters:
+    1. input_string: The string to be hashed.
+
+    Returns:
+    Prints the 32-bit hash as an unsigned decimal integer.
+
+    Example Usage:
+    hash=$(fnv1a_hash "0024200#0")  # Outputs: 3887519472
+
+    Notes:
+    - The string is hashed byte by byte. Hashing the bytes rather than the
+      numerical value of a configuration label is deliberate: labels such as
+      "0024200" carry leading zeros and would be silently misread as octal by
+      Bash arithmetic (and would be an outright error for a label containing
+      an "8" or a "9"). Hashing bytes also works for non-numerical labels.
+    - The running hash is masked to 32 bits after every step. The product of a
+      32-bit hash with the FNV prime stays below 2^56, so it cannot overflow
+      Bash 64-bit signed arithmetic before the mask is applied.
+    - FNV-1a on its own mixes its low bits poorly. Do not reduce this hash
+      modulo a small number directly; pass it through "fmix32_finalizer" first.
+    '
+
+    local input_string="$1"
+
+    # 32-bit FNV-1a offset basis and prime
+    local hash=2166136261
+    local prime=16777619
+
+    local index byte
+    for (( index = 0; index < ${#input_string}; index++ )); do
+        # Obtain the numerical byte value of the character at "index"
+        printf -v byte "%d" "'${input_string:index:1}"
+        hash=$(( (hash ^ byte) & 0xFFFFFFFF ))
+        hash=$(( (hash * prime) & 0xFFFFFFFF ))
+    done
+
+    echo "$hash"
+}
+
+
+fmix32_finalizer() {
+:   '
+    Function: fmix32_finalizer
+
+    Description:
+    Applies the MurmurHash3 32-bit finalization mix to a 32-bit value. This is
+    an avalanche step: it spreads the information held in the high bits of the
+    input across all 32 bits of the output.
+
+    Parameters:
+    1. value: A 32-bit unsigned integer.
+
+    Returns:
+    Prints the mixed 32-bit value as an unsigned decimal integer.
+
+    Example Usage:
+    mixed=$(fmix32_finalizer 3887519472)
+
+    Notes:
+    - This step is what makes a subsequent reduction modulo a small number
+      (such as a lattice dimension) safe. Without it, the low bits of an FNV-1a
+      hash carry almost no mixing: hashes of strings differing only in their
+      last byte end up strongly correlated after the reduction, which in turn
+      makes the shifts along the four directions correlated with each other.
+    - The two mixing constants exceed 2^31, so their product with a 32-bit
+      value would overflow Bash 64-bit signed arithmetic. The multiplications
+      are therefore carried out on 16-bit halves, which yields the low 32 bits
+      of the product exactly while keeping every intermediate below 2^49.
+    '
+
+    local value=$(( $1 & 0xFFFFFFFF ))
+    local factor
+
+    value=$(( value ^ (value >> 16) ))
+    factor=0x85ebca6b
+    value=$(( ( (value & 0xFFFF) * factor \
+                + ((((value >> 16) * factor) & 0xFFFF) << 16) ) & 0xFFFFFFFF ))
+
+    value=$(( value ^ (value >> 13) ))
+    factor=0xc2b2ae35
+    value=$(( ( (value & 0xFFFF) * factor \
+                + ((((value >> 16) * factor) & 0xFFFF) << 16) ) & 0xFFFFFFFF ))
+
+    value=$(( value ^ (value >> 16) ))
+
+    echo "$value"
+}
+
+
+gauge_shifts_from_configuration_label() {
+:   '
+    Function: gauge_shifts_from_configuration_label
+
+    Description:
+    Maps a gauge links configuration label deterministically to a "Gauge
+    shifts" 4-integer value. The same configuration label always yields the
+    same shifts, independently of which other configurations happen to be
+    present in the configurations directory, which is what keeps runs
+    reproducible.
+
+    The shift along each direction is obtained from an independent hash stream,
+    salted with the direction index, avalanched, and reduced modulo the
+    corresponding lattice dimension. Hashing is what decorrelates successive
+    configuration labels, which are typically sparse and regular (e.g. 0024200,
+    0024400, ...) and would map onto a handful of repeating shifts if they were
+    reduced modulo a lattice dimension directly. The avalanche step is what
+    decorrelates the four directions from each other.
+
+    Parameters:
+    1. configuration_label: The gauge links configuration label.
+    2. lattice_dimensions (optional): The lattice dimensions as a single
+       space-separated "T X Y Z" string. Defaults to the "LATTICE_DIMENSIONS"
+       global variable.
+
+    Returns:
+    - Prints the shifts as a space-separated "s_t s_x s_y s_z" string, with
+      each component satisfying 0 <= s_i < D_i.
+    - Returns 1 if the label is empty or the lattice dimensions are invalid.
+
+    Example Usage:
+    gauge_shifts=$(gauge_shifts_from_configuration_label "0024200" \
+                                                            "48 24 24 24")
+
+    Notes:
+    - Two configurations of an ensemble may be mapped to the same shifts. This
+      is harmless: translation averaging requires the offset to be decorrelated
+      from the configuration, not to be unique per configuration. For an
+      ensemble of 300 configurations on a 48x24x24x24 lattice the expected
+      number of colliding pairs is about 0.07.
+    '
+
+    local configuration_label="$1"
+    local lattice_dimensions="${2:-$LATTICE_DIMENSIONS}"
+
+    if [ -z "$configuration_label" ]; then
+        local error_message="Empty gauge links configuration label passed to "
+        error_message+="'gauge_shifts_from_configuration_label'."
+        termination_output "${error_message}"
+        return 1
+    fi
+
+    local dimensions_array=($lattice_dimensions)
+    if [ "${#dimensions_array[@]}" -ne 4 ]; then
+        local error_message="Lattice dimensions '${lattice_dimensions}' must "
+        error_message+="consist of exactly 4 values."
+        termination_output "${error_message}"
+        return 1
+    fi
+
+    local shifts_array=()
+    local direction_index hash
+    for (( direction_index = 0; direction_index < 4; direction_index++ )); do
+        if ! is_positive_integer "${dimensions_array[direction_index]}"; then
+            local error_message="Lattice dimension "
+            error_message+="'${dimensions_array[direction_index]}' is not a "
+            error_message+="positive integer."
+            termination_output "${error_message}"
+            return 1
+        fi
+
+        hash=$(fnv1a_hash "${configuration_label}#${direction_index}")
+        hash=$(fmix32_finalizer "$hash")
+        shifts_array+=( $(( hash % dimensions_array[direction_index] )) )
+    done
+
+    echo "${shifts_array[@]}"
+}
+
+
+default_gauge_shifts() {
+:   '
+    Function: default_gauge_shifts
+
+    Description:
+    Returns the default "Gauge shifts" value for a main program family. The
+    "invert" main programs and the remaining ones carry different defaults,
+    matching the values that used to be hardcoded in their respective empty
+    parameters files.
+
+    Parameters:
+    1. overlap_operator_method_label: The overlap operator method label, e.g.
+       "KL_invert" or "Chebyshev".
+
+    Returns:
+    Prints the default gauge shifts as a space-separated "T X Y Z" string.
+
+    Example Usage:
+    default_gauge_shifts "KL_invert"  # Outputs: 0 0 0 0
+    default_gauge_shifts "Chebyshev"  # Outputs: 14 7 6 2
+    '
+
+    local overlap_operator_method_label="$1"
+
+    if [[ "$overlap_operator_method_label" == *"invert"* ]]; then
+        echo "$DEFAULT_INVERT_GAUGE_SHIFTS"
+    else
+        echo "$DEFAULT_NON_INVERT_GAUGE_SHIFTS"
+    fi
+}

@@ -286,6 +286,15 @@ if [[ ! "$overlap_operator_method_label" == *"invert"* ]]; then
     exit 1;
     }
 fi
+# Set the default value of the "GAUGE_SHIFTS=" line according to the main
+# program family, so that the copied input file reproduces the value that used
+# to be hardcoded in the corresponding empty parameters file.
+sed -i "s|^GAUGE_SHIFTS=.*|GAUGE_SHIFTS=\"$(default_gauge_shifts \
+    "$overlap_operator_method_label")\"|" "$copied_setup_file_full_path" || {
+    error_message="Could not modify copied '$COPIED_SETUP_FILE_NAME' file.";
+    termination_output "$error_message";
+    exit 1;
+    }
 # Auto-populate the "MAIN_PROGRAM_EXECUTABLE=../" line with a guess on the main
 # program's executable name, which is based on the destination directory name.
 executable_name_guess=$(basename "$DESTINATION_DIRECTORY_PATH")
