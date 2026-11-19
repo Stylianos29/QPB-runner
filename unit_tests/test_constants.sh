@@ -53,6 +53,45 @@ test_BARE_INVERT_ITERABLE_PARAMETERS_NAMES_ARRAY() {
 }
 
 
+test_BARE_EIGENS_ITERABLE_PARAMETERS_NAMES_ARRAY() {
+
+    local tested_array="BARE_EIGENS_ITERABLE_PARAMETERS_NAMES_ARRAY"
+    local expected_array=("GAUGE_LINKS_CONFIGURATION_LABEL" "NUMBER_OF_VECTORS"\
+            "APE_ITERATIONS" "APE_ALPHA" "CLOVER_TERM_COEFFICIENT" "BARE_MASS" \
+            "KAPPA_VALUE" "EIGENSOLVER_EPSILON" "EIGENSOLVER_MAX_ITERATIONS")
+
+    assert_arrays_equal "$tested_array" expected_array
+}
+
+
+test_KL_EIGENS_ITERABLE_PARAMETERS_NAMES_ARRAY() {
+
+    local tested_array="KL_EIGENS_ITERABLE_PARAMETERS_NAMES_ARRAY"
+    local expected_array=("GAUGE_LINKS_CONFIGURATION_LABEL" "NUMBER_OF_VECTORS"\
+            "APE_ITERATIONS" "APE_ALPHA" "CLOVER_TERM_COEFFICIENT" "BARE_MASS" \
+            "RHO_VALUE" "KL_DIAGONAL_ORDER" "SOLVER_INNER_EPSILON" \
+            "SOLVER_INNER_MAX_ITERATIONS" "SCALING_FACTOR" \
+            "EIGENSOLVER_EPSILON" "EIGENSOLVER_MAX_ITERATIONS")
+
+    assert_arrays_equal "$tested_array" expected_array
+}
+
+
+test_EIGENS_ARRAYS_REGISTERED_IN_DICTIONARY() {
+
+    local method label
+    for method in Bare Chebyshev KL Neuberger Zolotarev; do
+        label="${method}_eigens"
+        [ -n "${ITERABLE_PARAMETERS_NAMES_DICTIONARY[$label]}" ] || {
+            echo "ERROR: '$label' missing from dictionary."; return 1; }
+        declare -n eigens_array="${ITERABLE_PARAMETERS_NAMES_DICTIONARY[$label]}"
+        [[ " ${eigens_array[*]} " == *" EIGENSOLVER_EPSILON EIGENSOLVER_MAX_ITERATIONS " ]] || {
+            echo "ERROR: '$label' lacks the eigensolver parameters."; return 1; }
+        unset -n eigens_array
+    done
+}
+
+
 test_CHEBYSHEV_ITERABLE_PARAMETERS_NAMES_ARRAY() {
 
     local tested_array="CHEBYSHEV_ITERABLE_PARAMETERS_NAMES_ARRAY"

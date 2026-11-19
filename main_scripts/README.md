@@ -23,6 +23,35 @@ options and a path for the job log file. Together, these are considered inputs
 and outputs for the main program executable, and all values or paths can be
 viewed as "parameters" for execution.
 
+### Main Program Types
+The setup is selected by two properties of the main program's directory path,
+both extracted automatically by `setup.sh` and `scan.sh`:
+1. The **method**: "Bare", or one of the overlap operator methods "Chebyshev",
+   "KL", "Neuberger", "Zolotarev".
+2. The **main program type**, set by a directory below `mainprogs` named
+   exactly:
+   - `invert`: the "invert" main programs, which write a solution binary file.
+   - `eigens`: the "eigens" main programs, which estimate the extreme
+     eigenvalues with a Lanczos eigensolver.
+   - anything else is the "generic" type, e.g. `sign-squared-violation`.
+
+Together they choose the empty parameters file
+`parameters_files/<method>[_<type>]_empty_parameters_file.ini` (no suffix for
+the "generic" type), e.g. `KL_eigens_empty_parameters_file.ini`, and the list
+of iterable parameters. Currently, "eigens" empty parameters files exist for
+"Bare" and "KL"; the iterable parameters lists of all five methods are already
+defined, so a new "eigens" main program only needs its empty parameters file.
+
+The "eigens" main programs add two iterable parameters, controlling the
+Lanczos eigensolver:
+- `EIGENSOLVER_EPSILON` (default `1e-4`): the convergence tolerance on the
+  relative change of the extreme Ritz values.
+- `EIGENSOLVER_MAX_ITERATIONS` (default `1000`): the maximum number of Lanczos
+  iterations.
+
+These are distinct from `LANCZOS_EPSILON` and `LANCZOS_MAX_ITERATIONS`, which
+belong to the Lanczos internal to the Chebyshev and Zolotarev operators.
+
 In summary, the sections of `input.txt` include:
 1. **Environment Variables** – General paths and directories.
 2. **Parameter Specification** – Lists of parameters to be used in the qpb

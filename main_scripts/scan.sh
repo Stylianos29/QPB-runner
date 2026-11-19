@@ -177,17 +177,17 @@ log "INFO" "Main program's executable log files directory path is valid."
 # Extract full path of current script's directory for later use
 CURRENT_SCRIPT_FULL_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Check if current script's directory path contains the substring "invert"
-MAIN_PROGRAM_IS_INVERT="False" # Initial value
-if [[ "${CURRENT_SCRIPT_FULL_PATH}" == *"invert"* ]]; then
-    # If it does then check "BINARY_INVERT_SOLUTION_FILES_DIRECTORY" variable also
+# Determine the main program type ("invert", "eigens", or "generic") from the
+# current script's directory path
+MAIN_PROGRAM_TYPE=$(extract_main_program_type "$CURRENT_SCRIPT_FULL_PATH")
+log "INFO" "Main program type is '${MAIN_PROGRAM_TYPE}'."
+if [[ "${MAIN_PROGRAM_TYPE}" == "invert" ]]; then
+    # Only "invert" main programs need "BINARY_INVERT_SOLUTION_FILES_DIRECTORY"
     error_message="Invalid invert solution files directory."
     check_if_directory_exists "$BINARY_INVERT_SOLUTION_FILES_DIRECTORY" \
                                                     "$error_message" || exit 1
     BINARY_INVERT_SOLUTION_FILES_DIRECTORY=$(realpath $BINARY_INVERT_SOLUTION_FILES_DIRECTORY)
     log "INFO" "Invert solution files directory path is valid."
-    # Set "MAIN_PROGRAM_IS_INVERT" boolean variable to True for later use
-    MAIN_PROGRAM_IS_INVERT="True"
 fi
 
 ########################### PARAMETERS SPECIFICATION ###########################
@@ -240,11 +240,10 @@ log "INFO" "List of non-iterable parameters names requested to "\
 
 # CHOOSE ITERABLE PARAMETERS NAMES ARRAY
 
-# Use current script's directory to choose among 6 iterable parameters arrays 
-overlap_operator_method_label=${OVERLAP_OPERATOR_METHOD}
-if [[ "${MAIN_PROGRAM_IS_INVERT}" == "True" ]]; then
-    overlap_operator_method_label+="_invert"
-fi
+# Choose the iterable parameters array by the overlap operator method and the
+# main program type, e.g. "KL", "KL_invert", or "KL_eigens"
+overlap_operator_method_label=$(main_program_label \
+                            "$OVERLAP_OPERATOR_METHOD" "$MAIN_PROGRAM_TYPE")
 iterable_parameters_names_array_name="${ITERABLE_PARAMETERS_NAMES_DICTIONARY[\
 "$overlap_operator_method_label"]}"
 log "INFO" "The iterable parameters names array that will be used is "\
@@ -396,7 +395,7 @@ constant_parameters_update LIST_OF_UPDATED_CONSTANT_VALUES \
                                             || { echo "Exiting..."; exit 1; }
 
 # OUTER SOLVER NORMALIZATION (invert main programs only)
-if [[ "${MAIN_PROGRAM_IS_INVERT}" == "True" ]]; then
+if [[ "${MAIN_PROGRAM_TYPE}" == "invert" ]]; then
     if [[ -z "${OUTER_SOLVER}" ]]; then
         OUTER_SOLVER="cg"
     else
@@ -629,7 +628,7 @@ for parameter in "${constant_parameters_names_array[@]}"; do
 done
 
 # Replace _OUTER_SOLVER_ placeholder (invert main programs only)
-if [[ "${MAIN_PROGRAM_IS_INVERT}" == "True" ]]; then
+if [[ "${MAIN_PROGRAM_TYPE}" == "invert" ]]; then
     sed -i "s@_OUTER_SOLVER_@${OUTER_SOLVER}@g" \
         "$TEMPLATE_PARAMETERS_FILE_FULL_PATH" \
         || { error_message="Could not pass OUTER_SOLVER value to template";
@@ -823,7 +822,7 @@ for overall_outer_loop_varying_parameter_value in \
 
             # For invert main progs, the binary solutions file full path needs
             # to be specified as well inside the parameters file
-            if [[ "${MAIN_PROGRAM_IS_INVERT}" == "True" ]]; then
+            if [[ "${MAIN_PROGRAM_TYPE}" == "invert" ]]; then
                 binary_solution_file_full_path=$BINARY_INVERT_SOLUTION_FILES_DIRECTORY
                 binary_solution_file_full_path+="/${output_filename}.dat"
                 parameter_name="BINARY_INVERT_SOLUTION_FILE_PATH"

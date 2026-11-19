@@ -184,17 +184,16 @@ SETUP_FILES_LIST=("input.txt" "README.md" "scan.sh"\
 # NOTE: An empty parameters file, determined by the destination directory
 # path, must also be included in the list of setup files to be copied.
 
-# Extract the overlap operator method from the destination directory path
+# Extract the overlap operator method and the main program type ("invert",
+# "eigens", or "generic") from the destination directory path
 overlap_operator_method=$(extract_overlap_operator_method \
                                                 "$DESTINATION_DIRECTORY_PATH")
-# Prefix for all empty parameters files is based on the overlap operator method
-empty_parameters_filename="${overlap_operator_method}_"
-# Check if the relative path (starting from "mainprogs") contains "invert"
-if [[ "${DESTINATION_DIRECTORY_PATH#*mainprogs/}" == *"invert"* ]]; then
-        # If "invert" is found, add "invert_" to the filename prefix
-        empty_parameters_filename+="invert_"
-fi
-# Finalize the selected empty parameters filename by adding the common suffix
+main_program_type=$(extract_main_program_type "$DESTINATION_DIRECTORY_PATH")
+# Combine them into the label prefixing the empty parameters filename, e.g.
+# "KL", "KL_invert", or "KL_eigens"
+overlap_operator_method_label=$(main_program_label \
+                            "$overlap_operator_method" "$main_program_type")
+empty_parameters_filename="${overlap_operator_method_label}_"
 empty_parameters_filename+="empty_parameters_file.ini"
 # Construct then the path of the selected empty parameters file to be copied
 empty_parameters_file_path="./parameters_files/${empty_parameters_filename}"
@@ -270,15 +269,13 @@ copied_setup_file_full_path="${DESTINATION_SETUP_DIRECTORY_PATH}/"\
 write_list_of_parameters_to_file NON_ITERABLE_PARAMETERS_NAMES_ARRAY \
 "List of non-iterable parameters" "$copied_setup_file_full_path"
 # And "iterable parameters", the latter chosen based on the overlap operator
-# method and on whether the destination main program is an "invert" one
-overlap_operator_method_label="${empty_parameters_filename%%\
-'_empty_parameters_file.ini'}"
+# method and on the main program type
 iterable_parameters_names_array="${ITERABLE_PARAMETERS_NAMES_DICTIONARY[\
 "$overlap_operator_method_label"]}"
 write_list_of_parameters_to_file $iterable_parameters_names_array \
 "List of iterable parameters" "$copied_setup_file_full_path" || exit 1
 # Remove the line "BINARY_INVERT_SOLUTION_FILES_DIRECTORY=" if not in an invert program
-if [[ ! "$overlap_operator_method_label" == *"invert"* ]]; then
+if [[ "$main_program_type" != "invert" ]]; then
     sed -i '/^BINARY_INVERT_SOLUTION_FILES_DIRECTORY=/d' \
         "$copied_setup_file_full_path" || { 
     error_message="Could not modify copied '$COPIED_SETUP_FILE_NAME' file.";

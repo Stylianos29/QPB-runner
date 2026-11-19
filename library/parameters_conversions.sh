@@ -108,6 +108,94 @@ extract_overlap_operator_method() {
 }
 
 
+extract_main_program_type() {
+:   '
+    Function: extract_main_program_type
+
+    Description: Extracts the main program type from a given file or directory
+    path. The main program type determines, together with the overlap operator
+    method, which empty parameters file and which iterable parameters array are
+    used.
+
+    Parameters:
+    - path (string): The full path that is checked for the main program
+      directory name.
+
+    Returns:
+    - "invert" if a directory of the path, below "mainprogs", is named "invert".
+    - "eigens" if a directory of the path, below "mainprogs", is named "eigens".
+    - "generic" otherwise, e.g. "sign-squared-violation" or "normality".
+
+    Usage Example:
+        extract_main_program_type "/qpb/mainprogs/overlap-kl-pfrac/eigens/scan"
+        # Outputs: eigens
+        extract_main_program_type "/qpb/mainprogs/invert/scan"
+        # Outputs: invert
+
+    Notes:
+    - Whole directory names are matched, not substrings, so that a project or
+      scan directory merely containing "invert" or "eigens" in its name (e.g.
+      "invert_tests") does not change the main program type.
+    - Only the part of the path below "mainprogs" is examined. If "mainprogs"
+      is absent, the last 4 levels of the path are examined instead, as in
+      "extract_overlap_operator_method".
+    '
+
+    local path="$1"
+
+    local relative_path="${path#*mainprogs/}"
+    if [[ "$relative_path" == "$path" ]]; then
+        relative_path=$(echo "$path" \
+            | awk -F'/' '{for(i=NF-3;i<=NF;i++) printf (i<NF? $i "/": $i)}')
+    fi
+
+    local -a path_components
+    IFS='/' read -r -a path_components <<< "$relative_path"
+
+    local component
+    for component in "${path_components[@]}"; do
+        case "$component" in
+            invert) echo "invert"; return 0 ;;
+            eigens) echo "eigens"; return 0 ;;
+        esac
+    done
+
+    echo "generic"
+}
+
+
+main_program_label() {
+:   '
+    Function: main_program_label
+
+    Description: Combines an overlap operator method and a main program type
+    into the label that keys "ITERABLE_PARAMETERS_NAMES_DICTIONARY" and that
+    prefixes the empty parameters filenames.
+
+    Parameters:
+    1. overlap_operator_method: "Bare", "Chebyshev", "KL", "Neuberger", or
+       "Zolotarev".
+    2. main_program_type: "invert", "eigens", or "generic".
+
+    Returns:
+    - "<method>" for the "generic" type, "<method>_<type>" otherwise.
+
+    Usage Example:
+        main_program_label "KL" "eigens"   # Outputs: KL_eigens
+        main_program_label "KL" "generic"  # Outputs: KL
+    '
+
+    local overlap_operator_method="$1"
+    local main_program_type="$2"
+
+    if [[ "$main_program_type" == "generic" ]]; then
+        echo "$overlap_operator_method"
+    else
+        echo "${overlap_operator_method}_${main_program_type}"
+    fi
+}
+
+
 extract_kernel_operator_type() {
 :   '
     Function: extract_kernel_operator_type
@@ -755,7 +843,8 @@ default_gauge_shifts() {
     Returns the default "Gauge shifts" value for a main program family. The
     "invert" main programs and the remaining ones carry different defaults,
     matching the values that used to be hardcoded in their respective empty
-    parameters files.
+    parameters files. The "eigens" main programs share the non-invert default;
+    the spectrum is translation invariant, so the value is immaterial there.
 
     Parameters:
     1. overlap_operator_method_label: The overlap operator method label, e.g.

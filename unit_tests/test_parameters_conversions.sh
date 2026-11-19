@@ -80,6 +80,56 @@ test_extract_overlap_operator_method() {
 }
 
 
+test_extract_main_program_type() {
+    test_input_values_list=(
+            "/qpb/mainprogs/invert/qpb_parameters_scan_files" \
+            "/qpb/mainprogs/overlap-kl/invert/qpb_parameters_scan_files" \
+            "/qpb/mainprogs/eigens/qpb_parameters_scan_files" \
+            "/qpb/mainprogs/overlap-kl-pfrac/eigens/qpb_parameters_scan_files" \
+            "/qpb/mainprogs/overlap-Chebyshev/sign-squared-violation/scan_files" \
+            "/qpb/mainprogs/overlap-kl-pfrac/normality/scan_files" \
+            # Project or scan directory names that might mislead the extraction
+            "/invert_tests/qpb/mainprogs/overlap-kl/normality/scan_files" \
+            "/eigens_tests/qpb/mainprogs/overlap-kl/invert/scan_files" \
+            "/qpb/mainprogs/overlap-kl-pfrac/eigens/invert_like_scan" \
+            # Paths without "mainprogs"
+            "/scratch/overlap-kl-pfrac/eigens/scan_files" \
+            "/scratch/overlap-kl-pfrac/mesons/scan_files"
+        )
+    expected_output_values_list=(
+            "invert" \
+            "invert" \
+            "eigens" \
+            "eigens" \
+            "generic" \
+            "generic" \
+            "generic" \
+            "invert" \
+            "eigens" \
+            "eigens" \
+            "generic"
+        )
+
+    assert_multiple_function_outputs extract_main_program_type \
+                            test_input_values_list expected_output_values_list
+}
+
+
+test_main_program_label() {
+    local output
+
+    output=$(main_program_label "KL" "generic")
+    [ "$output" == "KL" ] || { echo "ERROR: Got '$output', expected 'KL'."; \
+                                                                    return 1; }
+    output=$(main_program_label "KL" "eigens")
+    [ "$output" == "KL_eigens" ] || { echo "ERROR: Got '$output', expected "\
+                                                "'KL_eigens'."; return 1; }
+    output=$(main_program_label "Bare" "invert")
+    [ "$output" == "Bare_invert" ] || { echo "ERROR: Got '$output', expected "\
+                                                "'Bare_invert'."; return 1; }
+}
+
+
 test_extract_kernel_operator_type() {
     # Positive tests
     test_input_values_list=("Standard" "Stan" "0" "Brillouin" "Bri" "1")
@@ -289,10 +339,12 @@ test_default_gauge_shifts() {
     test_input_values_list=(\
             "Bare_invert" "KL_invert" "Zolotarev_invert" \
             "Bare" "KL" "Chebyshev" "Zolotarev" "Neuberger" \
+            "Bare_eigens" "KL_eigens" \
         )
     expected_output_values_list=(\
             "0 0 0 0" "0 0 0 0" "0 0 0 0" \
             "14 7 6 2" "14 7 6 2" "14 7 6 2" "14 7 6 2" "14 7 6 2" \
+            "14 7 6 2" "14 7 6 2" \
         )
 
     assert_multiple_function_outputs default_gauge_shifts \
