@@ -274,15 +274,29 @@ iterable_parameters_names_array="${ITERABLE_PARAMETERS_NAMES_DICTIONARY[\
 "$overlap_operator_method_label"]}"
 write_list_of_parameters_to_file $iterable_parameters_names_array \
 "List of iterable parameters" "$copied_setup_file_full_path" || exit 1
-# Remove the line "BINARY_INVERT_SOLUTION_FILES_DIRECTORY=" if not in an invert program
+# Remove the lines "BINARY_INVERT_SOLUTION_FILES_DIRECTORY=" and
+# "OUTER_SOLVER=" if not in an invert program, since "scan.sh" reads them only
+# for invert main programs
 if [[ "$main_program_type" != "invert" ]]; then
-    sed -i '/^BINARY_INVERT_SOLUTION_FILES_DIRECTORY=/d' \
-        "$copied_setup_file_full_path" || { 
+    sed -i -e '/^BINARY_INVERT_SOLUTION_FILES_DIRECTORY=/d' \
+        -e '/^OUTER_SOLVER=/d' "$copied_setup_file_full_path" || {
     error_message="Could not modify copied '$COPIED_SETUP_FILE_NAME' file.";
     termination_output "$error_message";
     exit 1;
     }
 fi
+# Remove the line "PRECONDITIONING=" unless in a preconditioned invert program,
+# the only ones for which "scan.sh" reads it
+case "$overlap_operator_method_label" in
+    KL_invert|Zolotarev_invert) ;;
+    *)
+        sed -i '/^PRECONDITIONING=/d' "$copied_setup_file_full_path" || {
+        error_message="Could not modify copied '$COPIED_SETUP_FILE_NAME' file.";
+        termination_output "$error_message";
+        exit 1;
+        }
+        ;;
+esac
 # Set the default value of the "GAUGE_SHIFTS=" line according to the main
 # program family, so that the copied input file reproduces the value that used
 # to be hardcoded in the corresponding empty parameters file.
